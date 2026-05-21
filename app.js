@@ -76,11 +76,13 @@ async function cargarFestivos() {
 }
 
 
-// Crea una tarjeta de evento en el DOM
+// Crea y añade al DOM una tarjeta de evento. Si es un evento de usuario, incluye un botón para eliminarlo
 function renderizarEvento(evento) {
     const card = document.createElement('div');
-
     card.className = `event-card ${evento.esFestivo ? 'holiday' : 'user-event'}`;
+
+    // Guardamos el id como atributo del elemento para poder encontrarlo al eliminar
+    card.dataset.id = evento.id;
 
     card.innerHTML = `
         <div class="event-info">
@@ -92,11 +94,80 @@ function renderizarEvento(evento) {
             </div>
             <div class="event-date">${evento.descripcion()}</div>
         </div>
+        ${evento.esFestivo ? '' : '<button class="btn-delete" title="Eliminar evento">✕</button>'}
     `;
+
+    // Solo los eventos del usuario tienen botón de eliminar, los festivos no
+    if (!evento.esFestivo) {
+        card.querySelector('.btn-delete').addEventListener('click', () => {
+            eliminarEvento(evento.id);
+        });
+    }
 
     eventListEl.appendChild(card);
 }
 
+// GESTIÓN DE EVENTOS PROPIOS
+// El usuario puede rellenar el formulario para crear eventos y también eliminarlos
+
+const modalOverlay  = document.getElementById('modal-overlay');
+const btnOpenModal  = document.getElementById('btn-open-modal');
+const btnCloseModal = document.getElementById('btn-close-modal');
+const btnCancel     = document.getElementById('btn-cancel');
+const eventForm     = document.getElementById('event-form');
+
+// Array en memoria que guarda los eventos creados por el usuario.
+let eventosUsuario = [];
+
+function abrirModal() {
+    modalOverlay.classList.remove('hidden');
+}
+
+function cerrarModal() {
+    modalOverlay.classList.add('hidden');
+    eventForm.reset();
+}
+
+// Básicamente lee el formulario, crea un objeto de Evento y lo muestra
+function crearEvento(e) {
+    e.preventDefault();
+
+    const titulo = document.getElementById('title').value.trim();
+    const fecha  = document.getElementById('date').value;
+    const hora   = document.getElementById('time').value;
+
+    const nuevoEvento = new Evento(Date.now(), titulo, fecha, hora, false);
+
+    eventosUsuario.push(nuevoEvento);
+
+    renderizarEvento(nuevoEvento);
+
+    cerrarModal();
+}
+
+function eliminarEvento(id) {
+    eventosUsuario = eventosUsuario.filter(evento => evento.id !== id);
+
+    const card = document.querySelector(`[data-id="${id}"]`);
+    if (card) card.remove();
+}
+
+// Conecta todos los listeners del modal y el formulario.
+function inicializarCRUD() {
+    btnOpenModal.addEventListener('click', abrirModal);
+    btnCloseModal.addEventListener('click', cerrarModal);
+    btnCancel.addEventListener('click', cerrarModal);
+    eventForm.addEventListener('submit', crearEvento);
+
+    // Esto es para que si se hace clic fuera del formulario se cierra
+    modalOverlay.addEventListener('click', function(e) {
+        if (e.target === modalOverlay) cerrarModal();
+    });
+}
+
 // ARRANQUE -----------------------------------------------------------------------------------------
 
-document.addEventListener('DOMContentLoaded', cargarFestivos);
+document.addEventListener('DOMContentLoaded', function() {
+    cargarFestivos();
+    inicializarCRUD();
+});
