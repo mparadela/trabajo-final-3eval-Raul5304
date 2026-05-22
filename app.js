@@ -61,7 +61,7 @@ async function cargarFestivos() {
             renderizarEvento(festivo);
         });
     }catch (error){
-        apiStatusEl.textContent = '✗ Sin conexión con la API';
+        apiStatusEl.textContent = 'Sin conexión con la API';
         apiStatusEl.style.color = '#d93025';
 
         eventListEl.innerHTML = `
@@ -199,19 +199,46 @@ function crearEvento(e) {
     eventosUsuario.push(nuevoEvento);
 
     renderizarEvento(nuevoEvento);
-
+    guardarEnLocalStorage();
     cerrarModal();
 }
 
 function eliminarEvento(id) {
     eventosUsuario = eventosUsuario.filter(evento => evento.id !== id);
+    guardarEnLocalStorage();
 
     const card = document.querySelector(`[data-id="${id}"]`);
     if (card) card.remove();
 }
 
+// LOCALSTORAGE -----------------------------------------------------------------------------------
+
+function guardarEnLocalStorage() {
+    localStorage.setItem('eventosUsuario', JSON.stringify(eventosUsuario));
+}
+
+// Lee localStorage, reconstruye los objetos Evento y los pinta en la lista.
+function cargarDesdeLocalStorage() {
+    const datos = localStorage.getItem('eventosUsuario');
+
+    if (!datos) return;
+
+    const eventosGuardados = JSON.parse(datos);
+
+    eventosGuardados.forEach(obj => {
+
+        // Reconstruimos cada uno con new Evento() para recuperar sus métodos.
+        const evento = new Evento(obj.id, obj.titulo, obj.fecha, obj.hora, obj.esFestivo);
+
+        eventosUsuario.push(evento);
+        renderizarEvento(evento);
+    });
+}
+
 // Conecta todos los listeners del modal y el formulario.
 function inicializarCRUD() {
+    cargarDesdeLocalStorage();
+
     btnOpenModal.addEventListener('click', abrirModal);
     btnCloseModal.addEventListener('click', cerrarModal);
     btnCancel.addEventListener('click', cerrarModal);
