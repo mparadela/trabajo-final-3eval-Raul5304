@@ -126,11 +126,69 @@ function abrirModal() {
 function cerrarModal() {
     modalOverlay.classList.add('hidden');
     eventForm.reset();
+    limpiarErrores();
+}
+
+// VALIDACIÓN DEL FORMULARIO -----------------------------------------------------------------------
+
+function limpiarErrores() {
+    document.getElementById('error-title').textContent = '';
+    document.getElementById('error-date').textContent = '';
+    document.getElementById('error-time').textContent = '';
+}
+
+// Valida los campos, rellena los spans de error si hay problema y devuelve true solo si todo es correcto.
+function validarFormulario() {
+    const titulo = document.getElementById('title').value.trim();
+    const fecha  = document.getElementById('date').value;
+    const hora   = document.getElementById('time').value;
+
+    const errorTitulo = document.getElementById('error-title');
+    const errorFecha  = document.getElementById('error-date');
+    const errorHora   = document.getElementById('error-time');
+
+    // Esto es para iniciar sin errores, asumiendo que el formulario es valido.
+    let esValido = true;
+    limpiarErrores();
+
+    if (titulo === '') {
+        errorTitulo.textContent = 'El título no puede estar vacío.';
+        esValido = false;
+    }
+
+    if (fecha === '') {
+        errorFecha.textContent = 'La fecha es obligatoria.';
+        esValido = false;
+    } else {
+        const hoy = new Date().toISOString().split('T')[0]; // Split T corta la fecha por delante de las horas
+
+        if (fecha < hoy) {
+            errorFecha.textContent = 'La fecha no puede ser anterior a hoy.';
+            esValido = false;
+        }
+    }
+
+    // [01]\d -> horas de 00 a 19
+    // 2[0-3] -> horas de 20 a 23
+    // [0-5]\d -> minutos de 00 a 59
+    const regexHora = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+    if (hora === '') {
+        errorHora.textContent = 'La hora es obligatoria.';
+        esValido = false;
+    } else if (!regexHora.test(hora)) {
+        errorHora.textContent = 'La hora debe tener formato HH:MM (ej. 09:30).';
+        esValido = false;
+    }
+
+    return esValido;
 }
 
 // Básicamente lee el formulario, crea un objeto de Evento y lo muestra
 function crearEvento(e) {
     e.preventDefault();
+
+    if (!validarFormulario()) return;
 
     const titulo = document.getElementById('title').value.trim();
     const fecha  = document.getElementById('date').value;
